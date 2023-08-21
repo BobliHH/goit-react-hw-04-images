@@ -11,6 +11,7 @@ export const App = () => {
       }}
     >
       React homework template
+      first ghp modification
     </div>
   );
 };
