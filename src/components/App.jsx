@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import SearchBar from './SearchBar/SearchBar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
-import axios from 'axios';
 import Loader from './Loader/Loader';
 import './App.css';
 import Modal from './Modal/Modal';
+import { fetchImages } from './FetchImages/FetchImages';
 
 const App = () => {
   const [images, setImages] = useState([]);
@@ -15,28 +15,20 @@ const App = () => {
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [total, setTotal] = useState(1);
+  const [showButton, setShowButton] = useState(false);
 
-  const fetchImages = () => {
-    const { query, page } = this.state;
-    const API_KEY = '36858023-bcc8002212b119e45a3b53208';
-
-    this.setState({ isLoading: true });
-
-    axios
-      .get(
-        `https://pixabay.com/api/?q=${query}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
-      )
-      .then(response => {
-        const { hits, totalHits } = response.data;
-
-        if (hits.length === 0) {
-          return alert(
-            'Sorry, there are no images matching your request...',
-            {}
-          );
+  useEffect(() => {
+    if (!query) return;
+    async function getImages() {
+      try {
+        setIsLoading(true);
+        setShowButton(true);
+        const responseImages = await fetchImages(query, page);
+        if (!responseImages.hits.length) {
+          return alert('Sorry, there are no images matching your request...');
         }
-
-        const modifiedHits = hits.map(
+        const modifiedHits = responseImages.hits.map(
           ({ id, tags, webformatURL, largeImageURL }) => ({
             id,
             tags,
@@ -45,52 +37,62 @@ const App = () => {
           })
         );
 
-        this.setState(prevState => ({
-          images: [...prevState.images, ...modifiedHits],
-          page: prevState.page + 1,
-          isLastPage:
-            prevState.images.length + modifiedHits.length >= totalHits,
-        }));
-      })
-      .catch(error => {
-        this.setState({ error: error.message });
-      })
-      .finally(() => {
-        this.setState({ isLoading: false });
-      });
-  };
+        setImages(prevImages => [...prevImages, ...modifiedHits]);
+        setTotal(responseImages.total);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    getImages();
+  }, [page, query]);
 
-  const handleSearchSubmit = query => {
-    if (this.state.query === query) {
+  const handleSearchSubmit = newQuery => {
+    if (query === newQuery) {
       return;
     }
-    this.setState({
-      query: query,
-      page: 1,
-      images: [],
-      error: null,
-      isLastPage: false,
-    });
+    // this.setState({
+    //   query: query,
+    //   page: 1,
+    //   images: [],
+    //   error: null,
+    //   isLastPage: false,
+    // });
+    setQuery(newQuery);
+    setImages([]);
+    setPage(1);
+    setTotal(1);
+    setIsLoading(false);
+    setError(null);
   };
 
   const handleImageClick = image => {
-    this.setState({ selectedImage: image, showModal: true });
+    // this.setState({ selectedImage: image, showModal: true });
+    setSelectedImage(image);
+    setShowModal(true);
   };
 
   const handleModalClose = () => {
-    this.setState({ selectedImage: null, showModal: false });
+    // this.setState({ selectedImage: null, showModal: false });
+    setSelectedImage(null);
+    setShowModal(false);
+  };
+
+  const loadMoreBtn = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
   return (
     <div className="App">
-      <SearchBar onSubmit={this.handleSearchSubmit} />
+      <SearchBar onSubmit={handleSearchSubmit} />
       {error && <p>Error: {error}</p>}
-      <ImageGallery images={images} onItemClick={this.handleImageClick} />
+      <ImageGallery images={images} onItemClick={handleImageClick} />
       {isLoading && <Loader />}
-      {!isLoading && images.length > 0(<Button onClick={this.fetchImages} />)}
-      {showModal && (
-        <Modal image={selectedImage} onClose={this.handleModalClose} />
+      {!isLoading && total / 12 > page && showButton && (
+        <Button onClick={loadMoreBtn} />
       )}
+      {showModal && <Modal image={selectedImage} onClose={handleModalClose} />}
     </div>
   );
 };
