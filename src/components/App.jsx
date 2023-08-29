@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import SearchBar from './SearchBar/SearchBar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
@@ -7,26 +7,16 @@ import Loader from './Loader/Loader';
 import './App.css';
 import Modal from './Modal/Modal';
 
-class App extends Component {
-  state = {
-    images: [],
-    isLoading: false,
-    error: null,
-    query: '',
-    page: 1,
-    showModal: false,
-    selectedImage: null,
-    isLastPage: false,
-  };
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  componentDidUpdate(_prevProps, prevState) {
-    if (prevState.query !== this.state.query) {
-      this.setState({ images: [], page: 1, isLastPage: false }, () => {
-        this.fetchImages();
-      });
-    }
-  }
-  fetchImages = () => {
+  const fetchImages = () => {
     const { query, page } = this.state;
     const API_KEY = '36858023-bcc8002212b119e45a3b53208';
 
@@ -70,7 +60,7 @@ class App extends Component {
       });
   };
 
-  handleSearchSubmit = query => {
+  const handleSearchSubmit = query => {
     if (this.state.query === query) {
       return;
     }
@@ -83,34 +73,26 @@ class App extends Component {
     });
   };
 
-  handleImageClick = image => {
+  const handleImageClick = image => {
     this.setState({ selectedImage: image, showModal: true });
-    
   };
 
-  handleModalClose = () => {
+  const handleModalClose = () => {
     this.setState({ selectedImage: null, showModal: false });
-    
   };
 
-  render() {
-    const { error, images, isLoading, isLastPage, showModal, selectedImage } =
-      this.state;
-    return (
-      <div className="App">
-        <SearchBar onSubmit={this.handleSearchSubmit} />
-        {error && <p>Error: {error}</p>}
-        <ImageGallery images={images} onItemClick={this.handleImageClick} />
-        {isLoading && <Loader />}
-        {!isLoading && images.length > 0 && !isLastPage && (
-          <Button onClick={this.fetchImages} />
-        )}
-        {showModal && (
-          <Modal image={selectedImage} onClose={this.handleModalClose} />
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div className="App">
+      <SearchBar onSubmit={this.handleSearchSubmit} />
+      {error && <p>Error: {error}</p>}
+      <ImageGallery images={images} onItemClick={this.handleImageClick} />
+      {isLoading && <Loader />}
+      {!isLoading && images.length > 0(<Button onClick={this.fetchImages} />)}
+      {showModal && (
+        <Modal image={selectedImage} onClose={this.handleModalClose} />
+      )}
+    </div>
+  );
+};
 
 export default App;
